@@ -101,7 +101,7 @@ geometricCtrl::geometricCtrl(const ros::NodeHandle &nh, const ros::NodeHandle &n
   nh_private_.param<int>("posehistory_window", posehistory_window_, 200);
   nh_private_.param<double>("init_pos_x", initTargetPos_x_, 0.0);
   nh_private_.param<double>("init_pos_y", initTargetPos_y_, 0.0);
-  nh_private_.param<double>("init_pos_z", initTargetPos_z_, 2.0);
+  nh_private_.param<double>("init_pos_z", initTargetPos_z_, 1.0);
 
   targetPos_ << initTargetPos_x_, initTargetPos_y_, initTargetPos_z_;  // Initial Position
   targetVel_ << 0.0, 0.0, 0.0;
@@ -210,6 +210,19 @@ void geometricCtrl::mavposeCallback(const geometry_msgs::PoseStamped &msg) {
   mavAtt_(1) = msg.pose.orientation.x;
   mavAtt_(2) = msg.pose.orientation.y;
   mavAtt_(3) = msg.pose.orientation.z;
+
+  if (node_state == TAKEOFF) {
+    if (abs(msg.pose.position.z - initTargetPos_z_) < 0.05) {
+      ROS_INFO("Done with takeoff, moving to start of trajectory");
+      node_state = MOVING_TO_START;
+    }
+  } else if (node_state == MOVING_TO_START) {
+    if (abs(msg.pose.position.x - (initTargetPos_x_ + 1)) < 0.05 && abs(msg.pose.position.y - initTargetPos_y_) < 0.05) { // Temp fix
+      node_state = MISSION_EXECUTION;
+      std_srvs::SetBool request;
+      ros::service::call("/start", request);
+    }
+  }
 }
 
 void geometricCtrl::mavtwistCallback(const geometry_msgs::TwistStamped &msg) {
@@ -227,8 +240,26 @@ void geometricCtrl::cmdloopCallback(const ros::TimerEvent &event) {
     case WAITING_FOR_HOME_POSE:
       waitForPredicate(&received_home_pose, "Waiting for home pose...");
       ROS_INFO("Got pose! Drone Ready to be armed.");
-      node_state = MISSION_EXECUTION;
+      node_state = TAKEOFF;
       break;
+
+    case TAKEOFF: {
+      geometry_msgs::PoseStamped positionMsg;
+      positionMsg.pose.position.x = 0;
+      positionMsg.pose.position.y = 0;
+      positionMsg.pose.position.z = initTargetPos_z_;
+      target_pose_pub_.publish(positionMsg);
+      break;
+    }
+
+    case MOVING_TO_START: {
+      geometry_msgs::PoseStamped positionMsg;
+      positionMsg.pose.position.x = initTargetPos_x_ + 1; // Temporary fix for initpos_x not actually containing the start location of the trajectory
+      positionMsg.pose.position.y = initTargetPos_y_;
+      positionMsg.pose.position.z = initTargetPos_z_;
+      target_pose_pub_.publish(positionMsg);
+      break;
+    }
 
     case MISSION_EXECUTION: {
       Eigen::Vector3d desired_acc;

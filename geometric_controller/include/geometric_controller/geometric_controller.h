@@ -176,7 +176,7 @@ class geometricCtrl {
   Eigen::Vector4d jerkcontroller(const Eigen::Vector3d &ref_jerk, const Eigen::Vector3d &ref_acc,
                                  Eigen::Vector4d &ref_att, Eigen::Vector4d &curr_att);
 
-  enum FlightState { WAITING_FOR_HOME_POSE, MISSION_EXECUTION, LANDING, LANDED } node_state;
+  enum FlightState { WAITING_FOR_HOME_POSE, TAKEOFF, MOVING_TO_START, MISSION_EXECUTION, LANDING, LANDED } node_state;
 
   template <class T>
   void waitForPredicate(const T *pred, const std::string &msg, double hz = 2.0) {

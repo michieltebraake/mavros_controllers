@@ -81,7 +81,7 @@ class trajectoryPublisher {
   ros::ServiceServer trajtriggerServ_;
   ros::Timer trajloop_timer_;
   ros::Timer refloop_timer_;
-  ros::Time start_time_, curr_time_;
+  ros::Time start_time_, curr_time_, prev_time_, prev_simulated_time_;
 
   nav_msgs::Path refTrajectory_;
   nav_msgs::Path primTrajectory_;
@@ -90,7 +90,7 @@ class trajectoryPublisher {
   Eigen::Vector3d p_targ, v_targ, a_targ;
   Eigen::Vector3d p_mav_, v_mav_;
   Eigen::Vector3d shape_origin_, shape_axis_;
-  double shape_omega_ = 0;
+  double shape_omega_, windup_ratio_ = 0;
   double theta_ = 0.0;
   double controlUpdate_dt_;
   double primitive_duration_;
@@ -100,6 +100,7 @@ class trajectoryPublisher {
   int pubreference_type_;
   int num_primitives_;
   int motion_selector_;
+  bool started_ = false;
 
   std::vector<std::shared_ptr<trajectory>> motionPrimitives_;
   std::vector<Eigen::Vector3d> inputs_;

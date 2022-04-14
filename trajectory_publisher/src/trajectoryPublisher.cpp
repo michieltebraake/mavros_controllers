@@ -109,11 +109,34 @@ trajectoryPublisher::trajectoryPublisher(const ros::NodeHandle& nh, const ros::N
 
 void trajectoryPublisher::updateReference() {
   curr_time_ = ros::Time::now();
-  trigger_time_ = (curr_time_ - start_time_).toSec();
+
+  ros::Duration time_delta;
+  time_delta = (curr_time_ - prev_time_) * windup_ratio_; // Scale time delta based on windup speed
+  prev_time_ = curr_time_;
+
+  prev_simulated_time_ += time_delta;
+  
+  trigger_time_ = prev_simulated_time_.toSec();
+
+
+  if (started_) {
+    if (windup_ratio_ < 1) {
+      windup_ratio_ += 0.001;
+      initializePrimitives(trajectory_type_);
+
+      if (windup_ratio_ >= 1) {
+        ROS_INFO("Done speeding up");
+      }
+    }
+  }
 
   p_targ = motionPrimitives_.at(motion_selector_)->getPosition(trigger_time_);
   v_targ = motionPrimitives_.at(motion_selector_)->getVelocity(trigger_time_);
   if (pubreference_type_ != 0) a_targ = motionPrimitives_.at(motion_selector_)->getAcceleration(trigger_time_);
+
+  // Prevent jerk movement at the start of trajectory
+  a_targ = a_targ * windup_ratio_;
+  v_targ = v_targ * windup_ratio_;
 }
 
 void trajectoryPublisher::initializePrimitives(int type) {
@@ -242,9 +265,12 @@ void trajectoryPublisher::refCallback(const ros::TimerEvent& event) {
 bool trajectoryPublisher::triggerCallback(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
   unsigned char mode = req.data;
 
-  start_time_ = ros::Time::now();
+  prev_simulated_time_, start_time_ = ros::Time::now();
   res.success = true;
   res.message = "trajectory triggered";
+  started_ = true;
+
+  return true;
 }
 
 void trajectoryPublisher::motionselectorCallback(const std_msgs::Int32& selector_msg) {
