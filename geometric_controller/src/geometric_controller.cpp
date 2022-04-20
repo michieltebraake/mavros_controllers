@@ -106,6 +106,7 @@ geometricCtrl::geometricCtrl(const ros::NodeHandle &nh, const ros::NodeHandle &n
   nh_private_.param<double>("Kv_y", Kvel_y_, 1.5);
   nh_private_.param<double>("Kv_z", Kvel_z_, 3.3);
   nh_private_.param<int>("posehistory_window", posehistory_window_, 200);
+  nh_private_.param<double>("shape_radius", shape_radius_, 1.0);
   nh_private_.param<double>("init_pos_x", initTargetPos_x_, 0.0);
   nh_private_.param<double>("init_pos_y", initTargetPos_y_, 0.0);
   nh_private_.param<double>("init_pos_z", initTargetPos_z_, 1.0);
@@ -236,7 +237,7 @@ void geometricCtrl::mavposeCallback(const geometry_msgs::PoseStamped &msg) {
   mavAtt_(3) = msg.pose.orientation.z;
 
   if (node_state == TAKEOFF) {
-    if (abs(msg.pose.position.z - initTargetPos_z_) < 0.05) {
+    if (abs(msg.pose.position.x - (initTargetPos_x_ + shape_radius_)) < 0.05 && abs(msg.pose.position.y - initTargetPos_y_) < 0.05) {
       ROS_INFO("Done with takeoff, moving to start of trajectory");
       node_state = MOVING_TO_START;
     }
@@ -278,7 +279,7 @@ void geometricCtrl::cmdloopCallback(const ros::TimerEvent &event) {
 
     case MOVING_TO_START: {
       geometry_msgs::PoseStamped positionMsg;
-      positionMsg.pose.position.x = initTargetPos_x_ + 1; // Temporary fix for initpos_x not actually containing the start location of the trajectory
+      positionMsg.pose.position.x = initTargetPos_x_ + shape_radius_;
       positionMsg.pose.position.y = initTargetPos_y_;
       positionMsg.pose.position.z = initTargetPos_z_;
       target_pose_pub_.publish(positionMsg);

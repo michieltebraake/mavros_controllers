@@ -49,13 +49,13 @@ shapetrajectory::~shapetrajectory(){
 
 };
 
-void shapetrajectory::initPrimitives(Eigen::Vector3d pos, Eigen::Vector3d axis, double omega) {
+void shapetrajectory::initPrimitives(Eigen::Vector3d pos, Eigen::Vector3d axis, double omega, double shape_radius) {
   // Generate primitives based on current state for smooth trajectory
   traj_origin_ = pos;
   traj_omega_ = omega;
   T_ = 2 * 3.14 / traj_omega_;
   traj_axis_ = axis;
-  traj_radial_ << 1.0, 0.0, 0.0;
+  traj_radial_ << shape_radius, 0.0, 0.0;
 }
 
 void shapetrajectory::generatePrimitives(Eigen::Vector3d pos) {}

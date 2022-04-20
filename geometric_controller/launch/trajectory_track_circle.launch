@@ -6,6 +6,7 @@
 
     <arg name="command_input" default="2" />
     <arg name="visualization" default="true"/>
+    <arg name="shape_radius" default="2" />
 
     <!-- Launch Gazebo if sim is set to true -->
     <group if="$(arg sim)">
@@ -43,11 +44,13 @@
         <param name="Kv_x" value="5.0"/>
         <param name="Kv_y" value="5.0"/>
         <param name="Kv_z" value="10.0"/>
+        <param name="shape_radius" value="$(arg shape_radius)" />
     </node>
 
     <node pkg="trajectory_publisher" type="trajectory_publisher" name="trajectory_publisher" output="screen">
         <param name="trajectory_type" value="1" />
         <param name="shape_omega" value=".7" />
+        <param name="shape_radius" value="$(arg shape_radius)" />
         <param name="initpos_z" value="1.0" />
         <param name="reference_type" value="2" />
     </node>

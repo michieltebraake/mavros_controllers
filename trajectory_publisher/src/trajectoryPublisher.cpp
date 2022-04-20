@@ -67,6 +67,7 @@ trajectoryPublisher::trajectoryPublisher(const ros::NodeHandle& nh, const ros::N
   nh_private_.param<double>("horizon", primitive_duration_, 1.0);
   nh_private_.param<double>("maxjerk", max_jerk_, 10.0);
   nh_private_.param<double>("shape_omega", shape_omega_, 1.5);
+  nh_private_.param<double>("shape_radius", shape_radius_, 1);
   nh_private_.param<int>("trajectory_type", trajectory_type_, 0);
   nh_private_.param<int>("number_of_primitives", num_primitives_, 7);
   nh_private_.param<int>("reference_type", pubreference_type_, 2);
@@ -145,7 +146,7 @@ void trajectoryPublisher::initializePrimitives(int type) {
       motionPrimitives_.at(i)->generatePrimitives(p_mav_, v_mav_, inputs_.at(i));
   } else {
     for (int i = 0; i < motionPrimitives_.size(); i++)
-      motionPrimitives_.at(i)->initPrimitives(shape_origin_, shape_axis_, shape_omega_);
+      motionPrimitives_.at(i)->initPrimitives(shape_origin_, shape_axis_, shape_omega_, shape_radius_);
     // TODO: Pass in parameters for primitive trajectories
   }
 }
