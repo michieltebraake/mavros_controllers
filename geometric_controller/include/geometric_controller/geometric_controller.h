@@ -60,6 +60,7 @@
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/Int32.h>
 #include <Eigen/Dense>
 
 #include <controller_msgs/FlatTarget.h>
@@ -103,22 +104,19 @@ private:
   ros::Subscriber mavposeSub_, gzmavposeSub_;
   ros::Subscriber mavtwistSub_;
   ros::Subscriber yawreferenceSub_;
+  ros::Subscriber lapCompletedSub_;
   ros::Publisher rotorVelPub_, angularVelPub_, target_pose_pub_;
   ros::Publisher referencePosePub_;
   ros::Publisher posehistoryPub_;
-  ros::ServiceClient arming_client_;
-  ros::ServiceClient set_mode_client_;
-  ros::ServiceServer land_service_;
+  ros::ServiceClient mission_finished_client_;
   ros::Timer cmdloop_timer_;
   ros::Time last_request_, reference_request_now_, reference_request_last_;
   ros::ServiceServer enable_control_server_;
   ros::ServiceServer disable_control_server_;
-  ros::ServiceClient mission_finished_client_;
 
   string mav_name_;
   bool fail_detec_, ctrl_enable_, feedthrough_enable_;
   int ctrl_mode_;
-  bool landing_commanded_;
   bool sim_enable_;
   bool velocity_yaw_;
   double kp_rot_, kd_rot_;
@@ -133,6 +131,7 @@ private:
   mavros_msgs::CommandBool arm_cmd_;
   std::vector<geometry_msgs::PoseStamped> posehistory_vector_;
   MAV_STATE companion_state_ = MAV_STATE::MAV_STATE_ACTIVE;
+  std_srvs::Trigger mission_finished_trigger_;
 
   double initTargetPos_x_, initTargetPos_y_, initTargetPos_z_;
   Eigen::Vector3d targetPos_, targetVel_, targetAcc_, targetJerk_, targetSnap_, targetPos_prev_, targetVel_prev_;
@@ -148,6 +147,7 @@ private:
   double Kpos_x_, Kpos_y_, Kpos_z_, Kvel_x_, Kvel_y_, Kvel_z_;
   double shape_radius_;
   int posehistory_window_;
+  int max_laps_;
 
   void pubMotorCommands();
   void pubRateCommands(const Eigen::Vector4d &cmd, const Eigen::Vector4d &target_attitude);
@@ -158,6 +158,7 @@ private:
   void targetCallback(const geometry_msgs::TwistStamped &msg);
   void flattargetCallback(const controller_msgs::FlatTarget &msg);
   void yawtargetCallback(const std_msgs::Float32 &msg);
+  void lapCompletedCallback(const std_msgs::Int32 &msg);
   void multiDOFJointCallback(const trajectory_msgs::MultiDOFJointTrajectory &msg);
   void keyboardCallback(const geometry_msgs::Twist &msg);
   void cmdloopCallback(const ros::TimerEvent &event);
@@ -165,7 +166,6 @@ private:
   void mavposeCallback(const geometry_msgs::PoseStamped &msg);
   void mavtwistCallback(const geometry_msgs::TwistStamped &msg);
   bool ctrltriggerCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
-  bool landCallback(std_srvs::SetBool::Request &request, std_srvs::SetBool::Response &response);
   geometry_msgs::PoseStamped vector3d2PoseStampedMsg(Eigen::Vector3d &position, Eigen::Vector4d &orientation);
   void computeBodyRateCmd(Eigen::Vector4d &bodyrate_cmd, const Eigen::Vector3d &target_acc);
   Eigen::Vector3d controlPosition(const Eigen::Vector3d &target_pos, const Eigen::Vector3d &target_vel,

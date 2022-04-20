@@ -47,6 +47,7 @@ trajectoryPublisher::trajectoryPublisher(const ros::NodeHandle& nh, const ros::N
   flatreferencePub_ = nh_.advertise<controller_msgs::FlatTarget>("reference/flatsetpoint", 1);
   rawreferencePub_ = nh_.advertise<mavros_msgs::PositionTarget>("mavros/setpoint_raw/local", 1);
   global_rawreferencePub_ = nh_.advertise<mavros_msgs::GlobalPositionTarget>("mavros/setpoint_raw/global", 1);
+  lapCompletedPub_ = nh_.advertise<std_msgs::Int32>("trajectory_publisher/lap_completed", 1);
   motionselectorSub_ =
       nh_.subscribe("trajectory_publisher/motionselector", 1, &trajectoryPublisher::motionselectorCallback, this,
                     ros::TransportHints().tcpNoDelay());
@@ -119,7 +120,13 @@ void trajectoryPublisher::updateReference() {
   
   trigger_time_ = prev_simulated_time_.toSec();
 
+  // Keep track of laps flown to stop automatically
+  if ((trigger_time_ * shape_omega_) - ((lap_ + 1) * 2 * 3.14) > 0) {
+    lap_ += 1;
+    pubLapCompleted(lap_);
+  }
 
+  // Slowly speed up
   if (started_) {
     if (windup_ratio_ < 1) {
       windup_ratio_ += 0.001;
@@ -238,6 +245,13 @@ void trajectoryPublisher::pubrefSetpointRawGlobal() {
   msg.acceleration_or_force.y = a_targ(1);
   msg.acceleration_or_force.z = a_targ(2);
   global_rawreferencePub_.publish(msg);
+}
+
+void trajectoryPublisher::pubLapCompleted(int lap) {
+  std_msgs::Int32 msg;
+
+  msg.data = lap;
+  lapCompletedPub_.publish(msg);
 }
 
 void trajectoryPublisher::loopCallback(const ros::TimerEvent& event) {

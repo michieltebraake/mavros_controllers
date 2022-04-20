@@ -74,6 +74,7 @@ class trajectoryPublisher {
   ros::Publisher flatreferencePub_;
   ros::Publisher rawreferencePub_;
   ros::Publisher global_rawreferencePub_;
+  ros::Publisher lapCompletedPub_;
   std::vector<ros::Publisher> primitivePub_;
   ros::Subscriber motionselectorSub_;
   ros::Subscriber mavposeSub_;
@@ -100,6 +101,7 @@ class trajectoryPublisher {
   int pubreference_type_;
   int num_primitives_;
   int motion_selector_;
+  int lap_=0;
   bool started_ = false;
 
   std::vector<std::shared_ptr<trajectory>> motionPrimitives_;
@@ -114,6 +116,7 @@ class trajectoryPublisher {
   void pubflatrefState();
   void pubrefSetpointRaw();
   void pubrefSetpointRawGlobal();
+  void pubLapCompleted(int lap);
   void initializePrimitives(int type);
   void updatePrimitives();
   void loopCallback(const ros::TimerEvent& event);
