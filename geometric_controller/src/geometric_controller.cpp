@@ -50,7 +50,7 @@ geometricCtrl::geometricCtrl(const ros::NodeHandle &nh, const ros::NodeHandle &n
       ctrl_enable_(true),
       landing_commanded_(false),
       feedthrough_enable_(false),
-      node_state(WAITING_FOR_HOME_POSE) {
+      node_state(TAKEOFF) {
   referenceSub_ =
       nh_.subscribe("reference/setpoint", 1, &geometricCtrl::targetCallback, this, ros::TransportHints().tcpNoDelay());
   flatreferenceSub_ = nh_.subscribe("reference/flatsetpoint", 1, &geometricCtrl::flattargetCallback, this,
@@ -65,17 +65,13 @@ geometricCtrl::geometricCtrl(const ros::NodeHandle &nh, const ros::NodeHandle &n
                               ros::TransportHints().tcpNoDelay());
   mavtwistSub_ = nh_.subscribe("mavros/local_position/velocity_local", 1, &geometricCtrl::mavtwistCallback, this,
                                ros::TransportHints().tcpNoDelay());
-  ctrltriggerServ_ = nh_.advertiseService("trigger_rlcontroller", &geometricCtrl::ctrltriggerCallback, this);
   cmdloop_timer_ = nh_.createTimer(ros::Duration(0.01), &geometricCtrl::cmdloopCallback,
                                    this);  // Define timer for constant loop rate
-  statusloop_timer_ = nh_.createTimer(ros::Duration(1), &geometricCtrl::statusloopCallback,
-                                      this);  // Define timer for constant loop rate
 
   angularVelPub_ = nh_.advertise<mavros_msgs::AttitudeTarget>("command/bodyrate_command", 1);
   referencePosePub_ = nh_.advertise<geometry_msgs::PoseStamped>("reference/pose", 1);
   target_pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("mavros/setpoint_position/local", 10);
   posehistoryPub_ = nh_.advertise<nav_msgs::Path>("geometric_controller/path", 10);
-  systemstatusPub_ = nh_.advertise<mavros_msgs::CompanionProcessStatus>("mavros/companion_process/status", 1);
   arming_client_ = nh_.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
   set_mode_client_ = nh_.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
   land_service_ = nh_.advertiseService("land", &geometricCtrl::landCallback, this);
@@ -130,6 +126,7 @@ geometricCtrl::~geometricCtrl() {
 bool geometricCtrl::enableControlCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res){
     ROS_INFO_STREAM(" EnableControlCallback called");
     cmdloop_timer_.start();
+    node_state = MOVING_TO_START;
     res.success = true;
     res.message = "Enabled geometric controller.";
     return true;
@@ -236,13 +233,8 @@ void geometricCtrl::mavposeCallback(const geometry_msgs::PoseStamped &msg) {
   mavAtt_(2) = msg.pose.orientation.y;
   mavAtt_(3) = msg.pose.orientation.z;
 
-  if (node_state == TAKEOFF) {
+  if (node_state == MOVING_TO_START) {
     if (abs(msg.pose.position.x - (initTargetPos_x_ + shape_radius_)) < 0.05 && abs(msg.pose.position.y - initTargetPos_y_) < 0.05) {
-      ROS_INFO("Done with takeoff, moving to start of trajectory");
-      node_state = MOVING_TO_START;
-    }
-  } else if (node_state == MOVING_TO_START) {
-    if (abs(msg.pose.position.x - (initTargetPos_x_ + 1)) < 0.05 && abs(msg.pose.position.y - initTargetPos_y_) < 0.05) { // Temp fix
       node_state = MISSION_EXECUTION;
       std_srvs::SetBool request;
       ros::service::call("/start", request);
@@ -262,21 +254,6 @@ bool geometricCtrl::landCallback(std_srvs::SetBool::Request &request, std_srvs::
 
 void geometricCtrl::cmdloopCallback(const ros::TimerEvent &event) {
   switch (node_state) {
-    case WAITING_FOR_HOME_POSE:
-      waitForPredicate(&received_home_pose, "Waiting for home pose...");
-      ROS_INFO("Got pose! Drone Ready to be armed.");
-      node_state = TAKEOFF;
-      break;
-
-    case TAKEOFF: {
-      geometry_msgs::PoseStamped positionMsg;
-      positionMsg.pose.position.x = 0;
-      positionMsg.pose.position.y = 0;
-      positionMsg.pose.position.z = initTargetPos_z_;
-      target_pose_pub_.publish(positionMsg);
-      break;
-    }
-
     case MOVING_TO_START: {
       geometry_msgs::PoseStamped positionMsg;
       positionMsg.pose.position.x = initTargetPos_x_ + shape_radius_;
@@ -320,29 +297,6 @@ void geometricCtrl::cmdloopCallback(const ros::TimerEvent &event) {
 
 void geometricCtrl::mavstateCallback(const mavros_msgs::State::ConstPtr &msg) { current_state_ = *msg; }
 
-void geometricCtrl::statusloopCallback(const ros::TimerEvent &event) {
-  if (sim_enable_) {
-    // Enable OFFBoard mode and arm automatically
-    // This will only run if the vehicle is simulated
-    arm_cmd_.request.value = true;
-    offb_set_mode_.request.custom_mode = "OFFBOARD";
-    if (current_state_.mode != "OFFBOARD" && (ros::Time::now() - last_request_ > ros::Duration(5.0))) {
-      if (set_mode_client_.call(offb_set_mode_) && offb_set_mode_.response.mode_sent) {
-        ROS_INFO("Offboard enabled");
-      }
-      last_request_ = ros::Time::now();
-    } else {
-      if (!current_state_.armed && (ros::Time::now() - last_request_ > ros::Duration(5.0))) {
-        if (arming_client_.call(arm_cmd_) && arm_cmd_.response.success) {
-          ROS_INFO("Vehicle armed");
-        }
-        last_request_ = ros::Time::now();
-      }
-    }
-  }
-  pubSystemStatus();
-}
-
 void geometricCtrl::pubReferencePose(const Eigen::Vector3d &target_position, const Eigen::Vector4d &target_attitude) {
   geometry_msgs::PoseStamped msg;
 
@@ -384,16 +338,6 @@ void geometricCtrl::pubPoseHistory() {
   msg.poses = posehistory_vector_;
 
   posehistoryPub_.publish(msg);
-}
-
-void geometricCtrl::pubSystemStatus() {
-  mavros_msgs::CompanionProcessStatus msg;
-
-  msg.header.stamp = ros::Time::now();
-  msg.component = 196;  // MAV_COMPONENT_ID_AVOIDANCE
-  msg.state = (int)companion_state_;
-
-  systemstatusPub_.publish(msg);
 }
 
 void geometricCtrl::appendPoseHistory() {
@@ -570,15 +514,6 @@ Eigen::Vector4d geometricCtrl::geometric_attcontroller(const Eigen::Vector4d &re
       std::max(0.0, std::min(1.0, norm_thrust_const_ * ref_acc.dot(zb) + norm_thrust_offset_));  // Calculate thrust
 
   return ratecmd;
-}
-
-bool geometricCtrl::ctrltriggerCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res) {
-  unsigned char mode = req.data;
-
-  ctrl_mode_ = mode;
-  res.success = ctrl_mode_;
-  res.message = "controller triggered";
-  return true;
 }
 
 void geometricCtrl::dynamicReconfigureCallback(geometric_controller::GeometricControllerConfig &config,
