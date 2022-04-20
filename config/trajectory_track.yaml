@@ -1,0 +1,32 @@
+# State machine update frequency (Hz)
+loop_frequency: 50
+
+# ID experiment type choices 
+
+# CONTROL TYPE, choose: 'attitude' 'velocity' or 'position' or 'tuning'
+control_type: 'position' 
+
+# INPUT TYPE, choose:
+# step = 0, 
+# PRBS - constant magnitude = 1
+# PRBS - varying magnitude = 2
+# sinudoid = 3
+# linear = 4
+# zero = 5
+input_type: 5
+
+# EXPERIMENT_TYPE, choose:
+# roll/v_y/y = 0
+# pitch/v_x/x = 1
+# yaw = 2
+# yaw_rate = 3
+# -/v_z/z = 4
+# thrust/-/- = 5
+experiment_type: 0
+
+position_setpoint: 1 #Depending on experiment choice in x,y or z
+velocity_setpoint: 2.1 #choose 2.1 for ID_experiments to roll/pitch 12 deg
+
+# This is relevant for PRBS and sinusoid
+max_frequency: 0.25
+min_frequency: 0.25

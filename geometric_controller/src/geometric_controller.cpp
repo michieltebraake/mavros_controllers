@@ -80,6 +80,13 @@ geometricCtrl::geometricCtrl(const ros::NodeHandle &nh, const ros::NodeHandle &n
   set_mode_client_ = nh_.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
   land_service_ = nh_.advertiseService("land", &geometricCtrl::landCallback, this);
 
+  //ROS service clients
+  mission_finished_client_ = nh_.serviceClient<std_srvs::Trigger>("/px4_mission_finished_ext_cont");
+
+  //ROS service servers
+  enable_control_server_ = nh_.advertiseService("/px4_ext_cont_enable", &geometricCtrl::enableControlCallback, this);
+  disable_control_server_ = nh_.advertiseService("/px4_ext_cont_disable", &geometricCtrl::disableControlCallback, this);
+
   nh_private_.param<string>("mavname", mav_name_, "iris");
   nh_private_.param<int>("ctrl_mode", ctrl_mode_, ERROR_QUATERNION);
   nh_private_.param<bool>("enable_sim", sim_enable_, true);
@@ -117,6 +124,23 @@ geometricCtrl::geometricCtrl(const ros::NodeHandle &nh, const ros::NodeHandle &n
 }
 geometricCtrl::~geometricCtrl() {
   // Destructor
+}
+
+bool geometricCtrl::enableControlCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res){
+    ROS_INFO_STREAM(" EnableControlCallback called");
+    cmdloop_timer_.start();
+    res.success = true;
+    res.message = "Enabled geometric controller.";
+    return true;
+}
+
+bool geometricCtrl::disableControlCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+{
+    ROS_INFO_STREAM(" DisableControlCallback called");
+    cmdloop_timer_.stop();
+    res.success = true;
+    res.message = "Disabled geometric controller.";
+    return true;
 }
 
 void geometricCtrl::targetCallback(const geometry_msgs::TwistStamped &msg) {

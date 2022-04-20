@@ -67,6 +67,7 @@
 #include <dynamic_reconfigure/server.h>
 #include <geometric_controller/GeometricControllerConfig.h>
 #include <std_srvs/SetBool.h>
+#include <std_srvs/Trigger.h>
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
 #include <trajectory_msgs/MultiDOFJointTrajectoryPoint.h>
 
@@ -111,6 +112,9 @@ class geometricCtrl {
   ros::ServiceServer land_service_;
   ros::Timer cmdloop_timer_, statusloop_timer_;
   ros::Time last_request_, reference_request_now_, reference_request_last_;
+  ros::ServiceServer enable_control_server_;
+  ros::ServiceServer disable_control_server_;
+  ros::ServiceClient mission_finished_client_;
 
   string mav_name_;
   bool fail_detec_, ctrl_enable_, feedthrough_enable_;
@@ -175,6 +179,8 @@ class geometricCtrl {
                                           Eigen::Vector4d &curr_att);
   Eigen::Vector4d jerkcontroller(const Eigen::Vector3d &ref_jerk, const Eigen::Vector3d &ref_acc,
                                  Eigen::Vector4d &ref_att, Eigen::Vector4d &curr_att);
+  bool enableControlCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+  bool disableControlCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 
   enum FlightState { WAITING_FOR_HOME_POSE, TAKEOFF, MOVING_TO_START, MISSION_EXECUTION, LANDING, LANDED } node_state;
 
