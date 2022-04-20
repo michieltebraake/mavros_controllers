@@ -55,7 +55,6 @@
 #include <geometry_msgs/TwistStamped.h>
 #include <mavros_msgs/AttitudeTarget.h>
 #include <mavros_msgs/CommandBool.h>
-#include <mavros_msgs/CompanionProcessStatus.h>
 #include <mavros_msgs/SetMode.h>
 #include <mavros_msgs/State.h>
 #include <nav_msgs/Odometry.h>
@@ -79,7 +78,8 @@
 using namespace std;
 using namespace Eigen;
 
-enum class MAV_STATE {
+enum class MAV_STATE
+{
   MAV_STATE_UNINIT,
   MAV_STATE_BOOT,
   MAV_STATE_CALIBRATIN,
@@ -91,8 +91,9 @@ enum class MAV_STATE {
   MAV_STATE_FLIGHT_TERMINATION,
 };
 
-class geometricCtrl {
- private:
+class geometricCtrl
+{
+private:
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
   ros::Subscriber referenceSub_;
@@ -105,12 +106,10 @@ class geometricCtrl {
   ros::Publisher rotorVelPub_, angularVelPub_, target_pose_pub_;
   ros::Publisher referencePosePub_;
   ros::Publisher posehistoryPub_;
-  ros::Publisher systemstatusPub_;
   ros::ServiceClient arming_client_;
   ros::ServiceClient set_mode_client_;
-  ros::ServiceServer ctrltriggerServ_;
   ros::ServiceServer land_service_;
-  ros::Timer cmdloop_timer_, statusloop_timer_;
+  ros::Timer cmdloop_timer_;
   ros::Time last_request_, reference_request_now_, reference_request_last_;
   ros::ServiceServer enable_control_server_;
   ros::ServiceServer disable_control_server_;
@@ -142,7 +141,7 @@ class geometricCtrl {
   double mavYaw_;
   Eigen::Vector3d g_;
   Eigen::Vector4d mavAtt_, q_des;
-  Eigen::Vector4d cmdBodyRate_;  //{wx, wy, wz, Thrust}
+  Eigen::Vector4d cmdBodyRate_; //{wx, wy, wz, Thrust}
   Eigen::Vector3d Kpos_, Kvel_, D_;
   Eigen::Vector3d a0, a1, tau;
   double tau_x, tau_y, tau_z;
@@ -154,7 +153,6 @@ class geometricCtrl {
   void pubRateCommands(const Eigen::Vector4d &cmd, const Eigen::Vector4d &target_attitude);
   void pubReferencePose(const Eigen::Vector3d &target_position, const Eigen::Vector4d &target_attitude);
   void pubPoseHistory();
-  void pubSystemStatus();
   void appendPoseHistory();
   void odomCallback(const nav_msgs::OdometryConstPtr &odomMsg);
   void targetCallback(const geometry_msgs::TwistStamped &msg);
@@ -166,7 +164,6 @@ class geometricCtrl {
   void mavstateCallback(const mavros_msgs::State::ConstPtr &msg);
   void mavposeCallback(const geometry_msgs::PoseStamped &msg);
   void mavtwistCallback(const geometry_msgs::TwistStamped &msg);
-  void statusloopCallback(const ros::TimerEvent &event);
   bool ctrltriggerCallback(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
   bool landCallback(std_srvs::SetBool::Request &request, std_srvs::SetBool::Response &response);
   geometry_msgs::PoseStamped vector3d2PoseStampedMsg(Eigen::Vector3d &position, Eigen::Vector4d &orientation);
@@ -183,13 +180,22 @@ class geometricCtrl {
   bool enableControlCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
   bool disableControlCallback(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 
-  enum FlightState { WAITING_FOR_HOME_POSE, TAKEOFF, MOVING_TO_START, MISSION_EXECUTION, LANDING, LANDED } node_state;
+  enum FlightState
+  {
+    TAKEOFF,
+    MOVING_TO_START,
+    MISSION_EXECUTION,
+    LANDING,
+    LANDED
+  } node_state;
 
   template <class T>
-  void waitForPredicate(const T *pred, const std::string &msg, double hz = 2.0) {
+  void waitForPredicate(const T *pred, const std::string &msg, double hz = 2.0)
+  {
     ros::Rate pause(hz);
     ROS_INFO_STREAM(msg);
-    while (ros::ok() && !(*pred)) {
+    while (ros::ok() && !(*pred))
+    {
       ros::spinOnce();
       pause.sleep();
     }
@@ -197,17 +203,19 @@ class geometricCtrl {
   geometry_msgs::Pose home_pose_;
   bool received_home_pose;
 
- public:
+public:
   void dynamicReconfigureCallback(geometric_controller::GeometricControllerConfig &config, uint32_t level);
   geometricCtrl(const ros::NodeHandle &nh, const ros::NodeHandle &nh_private);
   virtual ~geometricCtrl();
-  void getStates(Eigen::Vector3d &pos, Eigen::Vector4d &att, Eigen::Vector3d &vel, Eigen::Vector3d &angvel) {
+  void getStates(Eigen::Vector3d &pos, Eigen::Vector4d &att, Eigen::Vector3d &vel, Eigen::Vector3d &angvel)
+  {
     pos = mavPos_;
     att = mavAtt_;
     vel = mavVel_;
     angvel = mavRate_;
   };
-  void getErrors(Eigen::Vector3d &pos, Eigen::Vector3d &vel) {
+  void getErrors(Eigen::Vector3d &pos, Eigen::Vector3d &vel)
+  {
     pos = mavPos_ - targetPos_;
     vel = mavVel_ - targetVel_;
   };
