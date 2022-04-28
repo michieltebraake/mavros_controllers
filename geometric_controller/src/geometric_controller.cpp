@@ -105,7 +105,7 @@ geometricCtrl::geometricCtrl(const ros::NodeHandle &nh, const ros::NodeHandle &n
   nh_private_.param<double>("init_pos_x", initTargetPos_x_, 0.0);
   nh_private_.param<double>("init_pos_y", initTargetPos_y_, 0.0);
   nh_private_.param<double>("init_pos_z", initTargetPos_z_, 1.0);
-  nh_private_.param<int>("max_laps", max_laps_, 1);
+  nh_private_.param<int>("max_laps", max_laps_, 5);
 
   targetPos_ << initTargetPos_x_, initTargetPos_y_, initTargetPos_z_; // Initial Position
   targetVel_ << 0.0, 0.0, 0.0;
