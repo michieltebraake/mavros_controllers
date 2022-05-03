@@ -114,7 +114,7 @@ private:
   ros::ServiceServer enable_control_server_;
   ros::ServiceServer disable_control_server_;
 
-  string mav_name_;
+  string drone_name_;
   bool fail_detec_, ctrl_enable_, feedthrough_enable_;
   int ctrl_mode_;
   bool sim_enable_;

@@ -82,7 +82,7 @@ geometricCtrl::geometricCtrl(const ros::NodeHandle &nh, const ros::NodeHandle &n
   enable_control_server_ = nh_.advertiseService("/px4_ext_cont_enable", &geometricCtrl::enableControlCallback, this);
   disable_control_server_ = nh_.advertiseService("/px4_ext_cont_disable", &geometricCtrl::disableControlCallback, this);
 
-  nh_private_.param<string>("mavname", mav_name_, "iris");
+  nh_private_.param<string>("drone_name", drone_name_, "iris");
   nh_private_.param<int>("ctrl_mode", ctrl_mode_, ERROR_QUATERNION);
   nh_private_.param<bool>("enable_sim", sim_enable_, true);
   nh_private_.param<bool>("velocity_yaw", velocity_yaw_, false);
