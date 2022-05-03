@@ -7,11 +7,13 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   tf
-  mavros
-  mavros_extras
   mavros_msgs
   mavlink
   controller_msgs
+)
+
+find_package(
+  Eigen3 REQUIRED
 )
 
 catkin_package(
@@ -23,6 +25,7 @@ include_directories(
   include
   ${Boost_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS}
 )
 
 ############

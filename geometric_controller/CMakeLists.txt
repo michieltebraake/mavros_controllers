@@ -8,11 +8,13 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   dynamic_reconfigure
   tf
-  mavros
-  mavros_extras
   mavros_msgs
   mavlink
   controller_msgs
+)
+
+find_package(
+  Eigen3 REQUIRED
 )
 
 generate_dynamic_reconfigure_options(
@@ -32,7 +34,7 @@ include_directories(
   include
   ${Boost_INCLUDE_DIR}
   ${catkin_INCLUDE_DIRS}
-  ${Eigen_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS}
 )
 
 add_library(${PROJECT_NAME}
