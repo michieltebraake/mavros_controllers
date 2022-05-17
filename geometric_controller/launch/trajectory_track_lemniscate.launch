@@ -1,0 +1,79 @@
+<launch>
+    <arg name="sim" default="true" />
+    <arg name="drone_name" default="hovergames"/>
+    <arg name="run_px4_control_interface" default="true"/>
+    <arg name="px4_control_interface_param_file" default="$(find px4_tools)/config/px4_control_interface_trajectories.yaml"/>
+
+    <arg name="command_input" default="2" />
+    <arg name="visualization" default="true"/>
+    <arg name="shape_radius" default="2" />
+
+    <!-- Load robot_description and publish the states on tf -->
+    <include file="$(find drone_description)/launch/drone_description.launch">
+        <arg name="drone_name" value="$(arg drone_name)"/>
+    </include>
+
+    <!-- Launch Gazebo if sim is set to true -->
+    <group if="$(arg sim)">
+        <include file="$(find drone_gazebo)/launch/gazebo_world.launch"/>
+    </group>
+
+    <!-- Launch PX4 control interface, MAVROS, PX4 SITL and spawn vehicle -->
+    <include file="$(find px4_tools)/launch/px4_tools.launch">
+        <arg name="sim" value="$(arg sim)"/>
+        <arg name="drone_name" value="$(arg drone_name)"/>
+        <arg name="run_px4_control_interface" value="$(arg run_px4_control_interface)"/>
+        <arg name="px4_control_interface_param_file" value="$(arg px4_control_interface_param_file)"/>
+    </include>
+
+    <node pkg="geometric_controller" type="geometric_controller_node" name="geometric_controller" output="screen">
+        <param name="drone_name" type="string" value="$(arg drone_name)" />
+        <remap from="command/bodyrate_command" to="/mavros/setpoint_raw/attitude"/>
+        <param name="ctrl_mode" value="$(arg command_input)" />
+        <param name="enable_sim" value="$(arg sim)" />
+        <param name="enable_gazebo_state" value="$(arg sim)"/>
+        <param name="max_acc" value="10.0" />
+        <!--Params specific for Iris copter-->
+        <param name="attctrl_constant" value="0.3"/>
+        <param name="normalizedthrust_constant" value="0.06"/>
+        <param name="normalizedthrust_offset" value="0.1"/>
+        <param name="Kp_x" value="10.0" />
+        <param name="Kp_y" value="10.0" />
+        <param name="Kp_z" value="20.0" />
+        <param name="Kv_x" value="5.0"/>
+        <param name="Kv_y" value="5.0"/>
+        <param name="Kv_z" value="10.0"/>
+        <param name="shape_radius" value="$(arg shape_radius)" />
+    </node>
+
+    <node pkg="trajectory_publisher" type="trajectory_publisher" name="trajectory_publisher" output="screen">
+        <param name="trajectory_type" value="2" />
+        <param name="shape_omega" value=".7" />
+        <param name="shape_radius" value="$(arg shape_radius)" />
+        <param name="initpos_z" value="1.0" />
+        <param name="reference_type" value="2" />
+    </node>
+
+    <!-- Launch rqt_reconfigure -->
+    <node pkg="rqt_reconfigure" type="rqt_reconfigure" output="screen" name="rqt_reconfigure" />
+
+    <!-- Launch RViz -->
+    <group if="$(arg visualization)">
+        <node type="rviz" name="rviz" pkg="rviz" args="-d $(find geometric_controller)/launch/config_file.rviz" />
+    </group>
+
+    <!-- Record a ROS bag -->
+    <node pkg="rosbag" name="record" type="record"
+    args="mavros/setpoint_raw/local 
+        mavros/setpoint_raw/attitude 
+        mavros/setpoint_raw/target_local 
+        mavros/setpoint_raw/target_attitude
+        mavros/local_position/pose
+        mavros/local_position/velocity_body
+        mavros/local_position/accel
+        mavros/imu/data
+        mavros/imu/data_raw
+        mavros/battery
+        gazebo/model_states"
+    />
+</launch>
