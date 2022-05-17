@@ -1,5 +1,5 @@
 <launch>
-    <arg name="sim" default="true" />
+    <arg name="sim" default="false" />
     <arg name="drone_name" default="hovergames"/>
     <arg name="run_px4_control_interface" default="true"/>
     <arg name="px4_control_interface_param_file" default="$(find px4_tools)/config/px4_control_interface_trajectories.yaml"/>
