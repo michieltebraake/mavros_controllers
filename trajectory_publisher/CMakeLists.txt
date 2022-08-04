@@ -7,6 +7,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   tf
+  dynamic_reconfigure
   mavros_msgs
   mavlink
   controller_msgs
@@ -14,6 +15,10 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(
   Eigen3 REQUIRED
+)
+
+generate_dynamic_reconfigure_options(
+  cfg/TrajectoryPublisher.cfg
 )
 
 catkin_package(

@@ -59,6 +59,9 @@
 #include "trajectory_publisher/polynomialtrajectory.h"
 #include "trajectory_publisher/shapetrajectory.h"
 #include "trajectory_publisher/trajectory.h"
+#include "trajectory_publisher/TrajectoryPublisherConfig.h"
+#include <dynamic_reconfigure/server.h>
+
 
 #define REF_TWIST 8
 #define REF_SETPOINTRAW 16
@@ -92,6 +95,7 @@ class trajectoryPublisher {
   Eigen::Vector3d p_mav_, v_mav_;
   Eigen::Vector3d shape_origin_, shape_axis_;
   double shape_omega_, windup_ratio_, shape_radius_ = 0;
+  double velocity_scaler_ = 1;
   double theta_ = 0.0;
   double controlUpdate_dt_;
   double primitive_duration_;
@@ -109,6 +113,8 @@ class trajectoryPublisher {
 
  public:
   trajectoryPublisher(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
+  void dynamicReconfigureCallback(trajectory_publisher::TrajectoryPublisherConfig &config,
+                                               uint32_t level);
   void updateReference();
   void pubrefTrajectory(int selector);
   void pubprimitiveTrajectory();

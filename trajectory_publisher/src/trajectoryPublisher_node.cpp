@@ -42,7 +42,13 @@ int main(int argc, char **argv) {
   ros::init(argc, argv, "trajectory_publisher");
   ros::NodeHandle nh("");
   ros::NodeHandle nh_private("~");
-  trajectoryPublisher referencePublisher(nh, nh_private);
+  trajectoryPublisher* referencePublisher = new trajectoryPublisher(nh, nh_private);
+
+  dynamic_reconfigure::Server<trajectory_publisher::TrajectoryPublisherConfig> srv;
+  dynamic_reconfigure::Server<trajectory_publisher::TrajectoryPublisherConfig>::CallbackType f;
+  f = boost::bind(&trajectoryPublisher::dynamicReconfigureCallback, referencePublisher, _1, _2);
+  srv.setCallback(f);
+  
   ros::spin();
   return 0;
 }

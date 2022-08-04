@@ -72,6 +72,7 @@ trajectoryPublisher::trajectoryPublisher(const ros::NodeHandle& nh, const ros::N
   nh_private_.param<int>("trajectory_type", trajectory_type_, 0);
   nh_private_.param<int>("number_of_primitives", num_primitives_, 7);
   nh_private_.param<int>("reference_type", pubreference_type_, 2);
+  nh_private_.param<double>("velocity_scaler", velocity_scaler_, 1.0);
 
   inputs_.resize(num_primitives_);
 
@@ -109,11 +110,21 @@ trajectoryPublisher::trajectoryPublisher(const ros::NodeHandle& nh, const ros::N
   initializePrimitives(trajectory_type_);
 }
 
+void trajectoryPublisher::dynamicReconfigureCallback(trajectory_publisher::TrajectoryPublisherConfig &config,
+                                               uint32_t level)
+{
+  if (velocity_scaler_ != config.velocity_scaler)
+  {
+    velocity_scaler_ = config.velocity_scaler;
+    ROS_INFO("Reconfigure request : velocity_scaler = %.2f ", config.velocity_scaler);
+  }
+}
+
 void trajectoryPublisher::updateReference() {
   curr_time_ = ros::Time::now();
 
   ros::Duration time_delta;
-  time_delta = (curr_time_ - prev_time_) * windup_ratio_; // Scale time delta based on windup speed
+  time_delta = (curr_time_ - prev_time_) * (windup_ratio_ * velocity_scaler_); // Scale time delta based on windup speed
   prev_time_ = curr_time_;
 
   prev_simulated_time_ += time_delta;
