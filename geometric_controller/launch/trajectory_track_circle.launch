@@ -71,9 +71,18 @@
         mavros/local_position/pose
         mavros/local_position/velocity_body
         mavros/local_position/accel
+        mavros/local_position/velocity
         mavros/imu/data
         mavros/imu/data_raw
         mavros/battery
-        gazebo/model_states"
+        gazebo/model_states
+        mavros/setpoint_position/local
+        reference/pose
+        reference/setpoint
+        reference/flatsetpoint
+        trajectory_publisher/lap_completed
+        trajectory_publisher/trajectory
+        geometric_controller/path
+        command/bodyrate_command"
     />
 </launch>
