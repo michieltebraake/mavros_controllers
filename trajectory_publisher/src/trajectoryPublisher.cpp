@@ -72,7 +72,7 @@ trajectoryPublisher::trajectoryPublisher(const ros::NodeHandle& nh, const ros::N
   nh_private_.param<int>("trajectory_type", trajectory_type_, 0);
   nh_private_.param<int>("number_of_primitives", num_primitives_, 7);
   nh_private_.param<int>("reference_type", pubreference_type_, 2);
-  nh_private_.param<double>("velocity_scaler", velocity_scaler_, 1.0);
+  nh_private_.param<double>("velocity_scaler", velocity_scaler_, 2.1);
 
   inputs_.resize(num_primitives_);
 
