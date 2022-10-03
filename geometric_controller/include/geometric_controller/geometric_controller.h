@@ -147,6 +147,7 @@ private:
   double Kpos_x_, Kpos_y_, Kpos_z_, Kvel_x_, Kvel_y_, Kvel_z_;
   double torque_test_;
   double shape_radius_;
+  double start_traj_y_;
   int posehistory_window_;
   int max_laps_;
 

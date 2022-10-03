@@ -103,6 +103,7 @@ geometricCtrl::geometricCtrl(const ros::NodeHandle &nh, const ros::NodeHandle &n
   nh_private_.param<double>("torque_test", torque_test_, 0);
   nh_private_.param<int>("posehistory_window", posehistory_window_, 200);
   nh_private_.param<double>("shape_radius", shape_radius_, 1.0);
+  nh_private_.param<double>("start_traj_y", start_traj_y_, 0.0);
   nh_private_.param<double>("init_pos_x", initTargetPos_x_, 0.0);
   nh_private_.param<double>("init_pos_y", initTargetPos_y_, 0.0);
   nh_private_.param<double>("init_pos_z", initTargetPos_z_, 1.0);
@@ -256,8 +257,10 @@ void geometricCtrl::mavposeCallback(const geometry_msgs::PoseStamped &msg)
 
   if (node_state == MOVING_TO_START)
   {
-    if (abs(msg.pose.position.x - (initTargetPos_x_ + shape_radius_)) < 0.05 && abs(msg.pose.position.y - initTargetPos_y_) < 0.05)
+    if (abs(msg.pose.position.x - (initTargetPos_x_ + shape_radius_)) < 0.05
+     && abs(msg.pose.position.y - (initTargetPos_y_ + start_traj_y_)) < 0.05)
     {
+      // shape_radius_ = -shape_radius_;
       node_state = MISSION_EXECUTION;
       std_srvs::SetBool request;
       ros::service::call("/start", request);
@@ -292,7 +295,7 @@ void geometricCtrl::cmdloopCallback(const ros::TimerEvent &event)
   {
     geometry_msgs::PoseStamped positionMsg;
     positionMsg.pose.position.x = initTargetPos_x_ + shape_radius_;
-    positionMsg.pose.position.y = initTargetPos_y_;
+    positionMsg.pose.position.y = initTargetPos_y_ + start_traj_y_;
     positionMsg.pose.position.z = initTargetPos_z_;
     target_pose_pub_.publish(positionMsg);
     break;
